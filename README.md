@@ -6,16 +6,7 @@ Công cụ tham chiếu: Plugin Fiji/ImageJ Process -> Enhance Local Contrast (C
 
 ---
 
-## 1. Phân công Nhiệm vụ trong Nhóm
-
-| Thành viên | Vai trò và Nhiệm vụ chính |
-| :--- | :--- |
-| **Thành viên 1** | **Nghiên cứu Lý thuyết và Phân tích Fiji Plugin**: Tìm hiểu cơ sở toán học (Histogram, CDF, Contrast Stretching, HE, AHE, CLAHE), phân tích mô hình cắt histogram (Clip limit & redistribution), phân tích mã nguồn Java Enhance_Local_Contrast.java của Fiji và đóng góp phần lý thuyết trong báo cáo. |
-| **Thành viên 2** | **Cài đặt Thuật toán, Tối ưu và Kiểm thử Định lượng**: Lập trình bộ thư viện Python từ đầu (src/), cài đặt các thuật toán (Min-Max, Percentile, Global HE, CLAHE Tile-Grid với Nội suy song tuyến tính, CLAHE Sliding Window), tối ưu tốc độ thực thi, xây dựng bộ 7 chỉ số kiểm thử định lượng (metrics.py), chạy benchmark so sánh với OpenCV/Scikit-Image/Fiji, xuất bảng biểu và đồ thị cho báo cáo. |
-
----
-
-## 2. Tổng quan Thuật toán và Nền tảng Tham chiếu Fiji
+## 1. Tổng quan Thuật toán và Nền tảng Tham chiếu Fiji
 
 CLAHE (Contrast Limited Adaptive Histogram Equalization) là phương pháp tăng cường độ tương phản cục bộ mạnh mẽ, khắc phục các nhược điểm của Cân bằng Histogram toàn cục (Global HE) và AHE thông thường:
 1. **Thích nghi cục bộ (Adaptive)**: Tính toán histogram trên từng vùng ngữ cảnh cục bộ (Contextual region) thay vì toàn bộ bức ảnh.
@@ -24,14 +15,13 @@ CLAHE (Contrast Limited Adaptive Histogram Equalization) là phương pháp tăn
 
 ---
 
-## 3. Cấu trúc Thư mục Dự án
+## 2. Cấu trúc Thư mục Dự án
 
 ```text
 BTL_XLA/
 ├── README.md                 # Tài liệu hướng dẫn dự án
 ├── requirements.txt          # Danh sách thư viện Python phụ thuộc
-├── XLA_BTL.docx              # Quyển báo cáo chính của nhóm (~30 trang)
-├── doc_dump.txt              # Văn bản trích xuất từ báo cáo
+├── docs/                     # Quyển báo cáo và tài liệu lý thuyết
 ├── data/                     # Thư mục chứa dữ liệu ảnh kiểm thử
 │   ├── synthetic_low_contrast.png
 │   ├── synthetic_phantom_xray.png
@@ -59,54 +49,44 @@ BTL_XLA/
 
 ---
 
-## 4. Hướng dẫn Cài đặt Môi trường
+## 3. Hướng dẫn Cài đặt Môi trường
 
-### 4.1. Yêu cầu Hệ thống
+### 3.1. Yêu cầu Hệ thống
 - **Python**: Phiên bản Python 3.8 trở lên.
-- **Hệ điều hành**: Windows, macOS, hoặc Linux.
 
-### 4.2. Các bước cài đặt chi tiết
+### 3.2. Các bước cài đặt
 
-**Bước 1: Mở Terminal / Command Prompt / PowerShell**  
-Di chuyển đến thư mục chứa dự án `BTL_XLA`:
+**Bước 1: Mở Terminal / PowerShell tại thư mục dự án**
 
 ```bash
-cd d:\PTIT\Nam_4_1\XLA\BTL_XLA
+cd BTL_XLA
 ```
 
-**Bước 2: (Tùy chọn) Tạo và kích hoạt môi trường ảo (Virtual Environment)**
-- *Trêu Windows (PowerShell)*:
-  ```powershell
-  python -m venv venv
-  .\venv\Scripts\Activate.ps1
-  ```
-- *Trên Linux / macOS*:
-  ```bash
-  python3 -m venv venv
-  source venv/bin/activate
-  ```
+**Bước 2: (Tùy chọn) Tạo và kích hoạt môi trường ảo**
 
-**Bước 3: Cài đặt các thư viện Python phụ thuộc**
-Chạy lệnh cài đặt từ file `requirements.txt`:
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+**Bước 3: Cài đặt các thư viện phụ thuộc**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-*(Các thư viện chính bao gồm: `numpy`, `opencv-python`, `scikit-image`, `matplotlib`, `scipy`, `pillow`)*
-
 ---
 
-## 5. Hướng dẫn Chạy Chương trình Kiểm thử và Đánh giá
+## 4. Hướng dẫn Chạy Chương trình Kiểm thử và Đánh giá
 
-### 5.1. Cách 1: Chạy toàn bộ Benchmark tự động (Khuyên dùng)
+### 4.1. Cách 1: Chạy toàn bộ Benchmark tự động (Khuyên dùng)
 Để chạy toàn bộ quy trình kiểm thử từ khởi tạo dữ liệu, xử lý ảnh, tính toán 7 chỉ số định lượng đến xuất bảng báo cáo:
 
 ```bash
 python run_benchmark.py
 ```
 
-**Các bước hệ thống sẽ tự động thực thi**:
+**Các bước hệ thống tự động thực thi**:
 1. Tự động kiểm tra và tạo bộ ảnh thử nghiệm đa dạng trong thư mục `data/`.
 2. Áp dụng 7 phương pháp tăng cường tương phản lên tất cả ảnh:
    - *Original Image*: Ảnh gốc.
@@ -122,8 +102,7 @@ python run_benchmark.py
 
 ---
 
-### 5.2. Cách 2: Tải/Khởi tạo riêng bộ ảnh thử nghiệm
-Nếu bạn muốn tạo lại bộ ảnh mẫu trong thư mục `data/` mà không chạy benchmark:
+### 4.2. Cách 2: Tải/Khởi tạo riêng bộ ảnh thử nghiệm
 
 ```bash
 python scripts/download_samples.py
@@ -131,15 +110,14 @@ python scripts/download_samples.py
 
 ---
 
-### 5.3. Cách 3: Chạy trực tiếp từ môi trường IDE (VS Code / PyCharm)
-1. Mở thư mục `BTL_XLA` trong VS Code hoặc PyCharm.
+### 4.3. Cách 3: Chạy trực tiếp từ môi trường IDE (VS Code / PyCharm)
+1. Mở thư mục dự án trong VS Code hoặc PyCharm.
 2. Chọn Trình thông dịch Python (Python Interpreter) đã cài đặt `requirements.txt`.
-3. Mở file `run_benchmark.py` và nhấn nút **Run File** (hoặc `Shift + F10` trong PyCharm).
+3. Mở file `run_benchmark.py` và nhấn nút **Run File**.
 
 ---
 
-### 5.4. Cách 4: Tích hợp thư viện vào Code Python cá nhân
-Bạn có thể gọi trực tiếp các thuật toán trong bộ thư viện `src/` để xử lý một bức ảnh bất kỳ:
+### 4.4. Cách 4: Tích hợp thư viện vào Code Python cá nhân
 
 ```python
 import cv2
@@ -168,9 +146,9 @@ img_color_enhanced = process_color_image(img_color_rgb, clahe_tile.apply)
 
 ---
 
-### 5.5. Cách 5: Kiểm chứng đối chứng thủ công trên phần mềm Fiji/ImageJ
+### 4.5. Cách 5: Kiểm chứng đối chứng thủ công trên phần mềm Fiji/ImageJ
 Để so sánh kết quả giữa Python Code và phần mềm Fiji:
-1. Tải và mở phần mềm Fiji/ImageJ.
+1. Mở phần mềm Fiji/ImageJ.
 2. Chọn `File -> Open`, chọn một ảnh trong thư mục `data/` (ví dụ: `skimage_moon.png`).
 3. Vào menu: `Process -> Enhance Local Contrast (CLAHE)`.
 4. Nhập các tham số:
@@ -181,7 +159,7 @@ img_color_enhanced = process_color_image(img_color_rgb, clahe_tile.apply)
 
 ---
 
-## 6. Hệ thống 7 Chỉ số Kiểm thử Định lượng (`metrics.py`)
+## 5. Hệ thống 7 Chỉ số Kiểm thử Định lượng (`metrics.py`)
 
 | Chỉ số | Ý nghĩa và Công thức toán học | Tiêu chuẩn đánh giá |
 | :--- | :--- | :--- |
@@ -195,7 +173,7 @@ img_color_enhanced = process_color_image(img_color_rgb, clahe_tile.apply)
 
 ---
 
-## 7. Đọc Kết quả Thực nghiệm (`results/`)
+## 6. Đọc Kết quả Thực nghiệm (`results/`)
 
 Sau khi chạy xong lệnh `python run_benchmark.py`, các file kết quả sẽ được tạo tại thư mục `results/`:
 1. **`results/benchmark_summary.md`**: Bảng tổng hợp số liệu hiển thị dưới dạng Markdown để trích xuất vào báo cáo Word (~30 trang).
@@ -205,6 +183,6 @@ Sau khi chạy xong lệnh `python run_benchmark.py`, các file kết quả sẽ
 
 ---
 
-## 8. Kết luận cho Báo cáo Nhóm
+## 7. Kết luận cho Báo cáo Nhóm
 - Thuật toán **CLAHE tự cài đặt (Custom Tile CLAHE)** cho kết quả tương đương **OpenCV CLAHE** và khớp với hành vi của **Plugin Fiji Enhance Local Contrast**.
 - CLAHE vượt trội hoàn toàn so với Global HE nhờ khả năng **giữ độ sáng trung bình (AMBE thấp)**, **bảo toàn cấu trúc (SSIM cao)** và **không bị khuếch đại nhiễu hạt ở vùng phẳng (Noise Std được kiểm soát)**.
