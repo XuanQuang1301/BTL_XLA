@@ -33,10 +33,12 @@ BTL_XLA/
 ├── src/                      # Bộ mã nguồn Python cài đặt thuật toán
 │   ├── __init__.py
 │   ├── contrast_basic.py     # Min-Max, Percentile Saturation, Global HE
-│   ├── clahe_tile.py         # CLAHE Tile-Grid + Bilinear Interpolation (Zuiderveld)
-│   ├── clahe_sliding.py      # CLAHE Sliding Window (Cửa sổ trượt kiểu Fiji)
+│   ├── clahe_tile.py         # CLAHE Tile-Grid + Bilinear Interpolation (Zuiderveld) + AHE
+│   ├── clahe_sliding.py      # CLAHE Sliding Window (Cửa sổ trượt kiểu Fiji) + Local HE
 │   ├── metrics.py            # 7 chỉ số kiểm thử định lượng (Entropy, RMS, AMBE, EME, PSNR, SSIM, Noise)
 │   └── utils.py              # Helper load/save ảnh, chuyển màu LAB/HSV, vẽ đồ thị
+├── tests/                    # Bộ kiểm thử tự động (Unit Tests)
+│   └── test_algorithms.py    # 18 test cases kiểm thử các thuật toán và trường hợp biên
 ├── scripts/
 │   └── download_samples.py   # Script khởi tạo/tải bộ ảnh kiểm thử
 ├── run_benchmark.py          # Script chạy kiểm thử tự động toàn bộ dự án
@@ -77,9 +79,16 @@ pip install -r requirements.txt
 
 ---
 
-## 4. Hướng dẫn Chạy Chương trình Kiểm thử và Đánh giá
+## 4. Hướng dẫn Chạy Chương trình
 
-### 4.1. Cách 1: Chạy toàn bộ Benchmark tự động (Khuyên dùng)
+### 4.1. Cách 1: Chạy bộ Kiểm thử tự động (Unit Tests)
+Để kiểm tra tính đúng đắn và sự toàn vẹn của tất cả các hàm thuật toán (18 test cases):
+
+```bash
+python -m unittest discover tests
+```
+
+### 4.2. Cách 2: Chạy toàn bộ Benchmark định lượng tự động (Khuyên dùng)
 Để chạy toàn bộ quy trình kiểm thử từ khởi tạo dữ liệu, xử lý ảnh, tính toán 7 chỉ số định lượng đến xuất bảng báo cáo:
 
 ```bash
@@ -88,11 +97,12 @@ python run_benchmark.py
 
 **Các bước hệ thống tự động thực thi**:
 1. Tự động kiểm tra và tạo bộ ảnh thử nghiệm đa dạng trong thư mục `data/`.
-2. Áp dụng 7 phương pháp tăng cường tương phản lên tất cả ảnh:
+2. Áp dụng 8 phương pháp tăng cường tương phản lên tất cả ảnh:
    - *Original Image*: Ảnh gốc.
    - *Linear Contrast Stretch*: Kéo giãn tuyến tính Min-Max.
    - *Percentile Stretch*: Kéo giãn 0.35% bão hòa (tương tự ImageJ Process -> Enhance Contrast).
    - *Global Histogram Equalization*: Cân bằng histogram toàn cục.
+   - *Custom AHE*: Thuật toán Adaptive Histogram Equalization không cắt ngưỡng.
    - *Custom Tile CLAHE*: Thuật toán CLAHE Tile-Grid + Nội suy song tuyến tính cài đặt từ đầu.
    - *Custom Sliding CLAHE*: Thuật toán CLAHE Cửa sổ trượt cài đặt từ đầu (kiểu Fiji).
    - *OpenCV CLAHE*: Thuật toán CLAHE tối ưu của thư viện OpenCV (`cv2.createCLAHE`).
@@ -102,7 +112,7 @@ python run_benchmark.py
 
 ---
 
-### 4.2. Cách 2: Tải/Khởi tạo riêng bộ ảnh thử nghiệm
+### 4.3. Cách 3: Tải/Khởi tạo riêng bộ ảnh thử nghiệm
 
 ```bash
 python scripts/download_samples.py
@@ -110,20 +120,20 @@ python scripts/download_samples.py
 
 ---
 
-### 4.3. Cách 3: Chạy trực tiếp từ môi trường IDE (VS Code / PyCharm)
+### 4.4. Cách 4: Chạy trực tiếp từ môi trường IDE (VS Code / PyCharm)
 1. Mở thư mục dự án trong VS Code hoặc PyCharm.
 2. Chọn Trình thông dịch Python (Python Interpreter) đã cài đặt `requirements.txt`.
 3. Mở file `run_benchmark.py` và nhấn nút **Run File**.
 
 ---
 
-### 4.4. Cách 4: Tích hợp thư viện vào Code Python cá nhân
+### 4.5. Cách 5: Tích hợp thư viện vào Code Python cá nhân
 
 ```python
 import cv2
 from src.contrast_basic import linear_contrast_stretch, global_histogram_equalization
-from src.clahe_tile import CLAHEGrid
-from src.clahe_sliding import CLAHECửaSổTrượt
+from src.clahe_tile import CLAHEGrid, adaptive_histogram_equalization
+from src.clahe_sliding import CLAHECửaSổTrượt, local_histogram_equalization
 from src.metrics import compute_all_metrics
 from src.utils import process_color_image
 
@@ -146,7 +156,7 @@ img_color_enhanced = process_color_image(img_color_rgb, clahe_tile.apply)
 
 ---
 
-### 4.5. Cách 5: Kiểm chứng đối chứng thủ công trên phần mềm Fiji/ImageJ
+### 4.6. Cách 6: Kiểm chứng đối chứng thủ công trên phần mềm Fiji/ImageJ
 Để so sánh kết quả giữa Python Code và phần mềm Fiji:
 1. Mở phần mềm Fiji/ImageJ.
 2. Chọn `File -> Open`, chọn một ảnh trong thư mục `data/` (ví dụ: `skimage_moon.png`).

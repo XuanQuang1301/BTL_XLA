@@ -38,7 +38,9 @@ class CLAHECửaSổTrượt:
         
         sampled_out = np.zeros((len(y_coords), len(x_coords)), dtype=np.uint8)
         n_pixels = (2 * half + 1) ** 2
-        threshold = max(1, int(self.clip_limit * n_pixels / self.num_bins + 0.5))
+        do_clip = (self.clip_limit is not None and self.clip_limit > 0 and not np.isinf(self.clip_limit))
+        if do_clip:
+            threshold = max(1, int(self.clip_limit * n_pixels / self.num_bins + 0.5))
         
         for yi, y in enumerate(y_coords):
             py = y + half
@@ -51,11 +53,14 @@ class CLAHECửaSổTrượt:
                 # Fast bincount in C
                 hist = np.bincount(window.ravel(), minlength=self.num_bins).astype(np.int64)
                 
-                # Clip & uniform redistribute
-                excess = int(np.sum(np.maximum(0, hist - threshold)))
-                clipped = np.minimum(hist, threshold)
-                if excess > 0:
-                    clipped += excess // self.num_bins
+                if do_clip:
+                    # Clip & uniform redistribute
+                    excess = int(np.sum(np.maximum(0, hist - threshold)))
+                    clipped = np.minimum(hist, threshold)
+                    if excess > 0:
+                        clipped += excess // self.num_bins
+                else:
+                    clipped = hist
                     
                 # Center pixel CDF value
                 val_center = int(img[y, x])
@@ -73,3 +78,11 @@ class CLAHECửaSổTrượt:
             out_img = sampled_out
             
         return out_img
+
+
+def local_histogram_equalization(img: np.ndarray, block_size: int = 63, stride: int = 4) -> np.ndarray:
+    """
+    Local Histogram Equalization (Sliding Window without contrast limiting).
+    """
+    sliding_he = CLAHECửaSổTrượt(block_size=block_size, clip_limit=None, stride=stride)
+    return sliding_he.apply(img)

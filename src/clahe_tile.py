@@ -22,7 +22,11 @@ class CLAHEGrid:
         """
         Clip histogram and redistribute clipped excess pixels.
         clip_threshold = max(1, int(clip_limit * n_pixels / num_bins))
+        If clip_limit is None or <= 0, no clipping is applied (Pure AHE).
         """
+        if self.clip_limit is None or self.clip_limit <= 0 or np.isinf(self.clip_limit):
+            return hist.copy()
+
         threshold = max(1, int(self.clip_limit * n_pixels / self.num_bins))
         clipped_hist = hist.copy()
         
@@ -112,3 +116,20 @@ class CLAHEGrid:
         out_img = np.clip(np.round(interp_img), 0, 255).astype(np.uint8)
         
         return out_img
+
+
+class AHEGrid(CLAHEGrid):
+    """
+    Adaptive Histogram Equalization (AHE) on a tile grid without contrast limiting.
+    Equivalent to CLAHE with clip_limit=None.
+    """
+    def __init__(self, tile_grid_size=(8, 8), num_bins=256):
+        super().__init__(tile_grid_size=tile_grid_size, clip_limit=None, num_bins=num_bins)
+
+
+def adaptive_histogram_equalization(img: np.ndarray, tile_grid_size=(8, 8)) -> np.ndarray:
+    """
+    Apply Adaptive Histogram Equalization (AHE) to an image using tile grid + bilinear interpolation.
+    """
+    ahe = AHEGrid(tile_grid_size=tile_grid_size)
+    return ahe.apply(img)

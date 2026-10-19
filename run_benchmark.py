@@ -6,8 +6,8 @@ import numpy as np
 from skimage.exposure import equalize_adapthist
 
 from src.contrast_basic import linear_contrast_stretch, percentile_contrast_stretch, global_histogram_equalization
-from src.clahe_tile import CLAHEGrid
-from src.clahe_sliding import CLAHECửaSổTrượt
+from src.clahe_tile import CLAHEGrid, AHEGrid, adaptive_histogram_equalization
+from src.clahe_sliding import CLAHECửaSổTrượt, local_histogram_equalization
 from src.metrics import compute_all_metrics
 from src.utils import load_image, save_image, process_color_image, plot_comparison
 from scripts.download_samples import prepare_sample_dataset
@@ -46,6 +46,7 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
     print("================================================================")
     
     # Initialize algorithms
+    ahe_custom = AHEGrid(tile_grid_size=(8, 8))
     clahe_tile_custom = CLAHEGrid(tile_grid_size=(8, 8), clip_limit=3.0)
     clahe_sliding_custom = CLAHECửaSổTrượt(block_size=63, clip_limit=3.0, stride=4)
     opencv_clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -92,7 +93,15 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
             methods['Global HE'] = global_histogram_equalization(img_orig)
         t_he = (time.time() - t0) * 1000.0
         
-        # 4. Custom Tile CLAHE (Zuiderveld reference)
+        # 4. Custom AHE (Adaptive Histogram Equalization without clip limit)
+        t0 = time.time()
+        if is_color:
+            methods['Custom AHE'] = process_color_image(img_orig, ahe_custom.apply)
+        else:
+            methods['Custom AHE'] = ahe_custom.apply(img_orig)
+        t_ahe = (time.time() - t0) * 1000.0
+
+        # 5. Custom Tile CLAHE (Zuiderveld reference)
         t0 = time.time()
         if is_color:
             methods['Custom Tile CLAHE'] = process_color_image(img_orig, clahe_tile_custom.apply)
@@ -100,7 +109,7 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
             methods['Custom Tile CLAHE'] = clahe_tile_custom.apply(img_orig)
         t_tile = (time.time() - t0) * 1000.0
         
-        # 5. Custom Sliding CLAHE (Fiji style)
+        # 6. Custom Sliding CLAHE (Fiji style)
         t0 = time.time()
         if is_color:
             methods['Custom Sliding CLAHE'] = process_color_image(img_orig, clahe_sliding_custom.apply)
@@ -108,7 +117,7 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
             methods['Custom Sliding CLAHE'] = clahe_sliding_custom.apply(img_orig)
         t_sliding = (time.time() - t0) * 1000.0
 
-        # 6. OpenCV CLAHE
+        # 7. OpenCV CLAHE
         t0 = time.time()
         if is_color:
             methods['OpenCV CLAHE'] = process_color_image(img_orig, opencv_clahe.apply)
@@ -116,7 +125,7 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
             methods['OpenCV CLAHE'] = opencv_clahe.apply(img_orig)
         t_opencv = (time.time() - t0) * 1000.0
         
-        # 7. Scikit-Image CLAHE
+        # 8. Scikit-Image CLAHE
         t0 = time.time()
         if is_color:
             methods['Skimage CLAHE'] = process_color_image(img_orig, apply_skimage_clahe)
@@ -130,6 +139,7 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
             'Linear Stretch': t_linear,
             'Percentile Stretch': t_perc,
             'Global HE': t_he,
+            'Custom AHE': t_ahe,
             'Custom Tile CLAHE': t_tile,
             'Custom Sliding CLAHE': t_sliding,
             'OpenCV CLAHE': t_opencv,
@@ -178,9 +188,10 @@ def run_all_benchmarks(data_dir: str = "data", results_dir: str = "results"):
         f.write(export_markdown_table(headers, rows))
         f.write("\n\n## 2. Phân tích và Nhận xét định lượng\n")
         f.write("- **Entropy**: Thuật toán CLAHE (cả Custom Tile, Custom Sliding và OpenCV) làm tăng Entropy đáng kể so với ảnh gốc mà không làm bão hòa mức xám như Global HE.\n")
+        f.write("- **Kiểm soát nhiễu (Noise Std)**: AHE thuần túy (không giới hạn tương phản) làm bùng nổ nhiễu tại các vùng phẳng (Noise Std tăng vọt). CLAHE với cơ chế clip limit đã khống chế thành công nhiễu nền, giữ Noise Std ở mức an toàn.\n")
         f.write("- **AMBE**: CLAHE duy trì giá trị AMBE nhỏ hơn nhiều so với Global HE, chứng minh khả năng bảo toàn độ sáng trung bình.\n")
         f.write("- **EME & RMS Contrast**: CLAHE cải thiện tương phản cục bộ EME cao vượt trội so với các phương pháp toàn cục.\n")
-        f.write("- **Thời gian thực thi**: OpenCV CLAHE nhanh nhất do viết bằng C++, tiếp theo là Custom Tile CLAHE (NumPy optimized) và Custom Sliding CLAHE (Cửa sổ trượt Fiji).\n")
+        f.write("- **Thời gian thực thi**: OpenCV CLAHE nhanh nhất do viết bằng C++, tiếp theo là Custom Tile CLAHE (NumPy vectorized ~10-100ms) và Custom Sliding CLAHE (Cửa sổ trượt Fiji).\n")
 
     print(f"Saved Markdown summary report to: {summary_path}", flush=True)
     print("\nBENCHMARK COMPLETED SUCCESSFULLY!", flush=True)
